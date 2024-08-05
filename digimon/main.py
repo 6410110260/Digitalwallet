@@ -74,16 +74,50 @@ class Item(BaseItem):
 
 
 
-class DBItem(Item, SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-
 class ItemList(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     items: list[Item]
     page: int
     page_size: int
     size_per_page: int
+
+class Merchant_list(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    merchants: list[Merchant]
+    page: int
+    page_size: int
+    size_per_page: int
+
+class Transaction_list(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    transactions: list[Transaction]
+    page: int
+    page_size: int
+    size_per_page: int
+
+class Wallet_list(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    wallets: list[Wallet]
+    page: int
+    page_size: int
+    size_per_page: int
+
+
+class DBItem(Item, SQLModel, table=True):
+    __tablename = 'items'
+    id:int = Field(default=None, primary_key=True)
+    merchant_id: int = Field(default=None, foreign_key="merchants.id")
+
+class DBMerchant(Merchant, SQLModel, table=True):
+    __tablename__ = "merchants"
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+class DBWallet(Wallet, SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+class DBTransaction(Transaction, SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
 
 
 connect_args = {}
