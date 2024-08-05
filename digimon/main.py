@@ -248,3 +248,55 @@ async def delete_item(merchant_id: int) -> dict:
         session.commit()
 
     return dict(message="delete success")
+
+@app.post("/wallets")
+async def create_item(wallet: CreatedWallet) -> Wallet:
+    print("created_merchant", wallet)
+    data = wallet.dict()
+    dbitem = DBWallet(**data)
+    with Session(engine) as session:
+        session.add(dbitem)
+        session.commit()
+        session.refresh(dbitem)
+
+    # return Item.parse_obj(dbitem.dict())
+    return Wallet.from_orm(dbitem)
+
+@app.get("/wallets")
+async def read_items() -> Wallet_list:
+    with Session(engine) as session:
+        wallets = session.exec(select(DBWallet)).all()
+        
+    return Wallet_list.from_orm(dict(wallets=wallets, page_size=0, page=0, size_per_page=0))
+
+@app.get("/wallets/{wallet_id}")
+async def read_item(wallet_id: int) -> Wallet:
+    with Session(engine) as session:
+        db_item = session.get(DBWallet, wallet_id)
+        if db_item:
+            return Wallet.from_orm(db_item)
+    raise HTTPException(status_code=404, detail="Item not found")
+
+@app.put("/wallets/{wallet_id}")
+async def update_item(wallet_id: int, item: UpdateWallet) -> Wallet:
+    print("update_item", item)
+    data = item.dict()
+    with Session(engine) as session:
+        db_item = session.get(DBWallet, wallet_id)
+        db_item.sqlmodel_update(data)
+        session.add(db_item)
+        session.commit()
+        session.refresh(db_item)
+
+    # return Item.parse_obj(dbitem.dict())
+    return Wallet.from_orm(db_item)
+
+@app.delete("/wallets/{wallet_id}")
+async def delete_item(wallet_id: int) -> dict:
+    with Session(engine) as session:
+        db_item = session.get(DBWallet, wallet_id)
+        session.delete(db_item)
+        session.commit()
+
+    return dict(message="delete success")
+
