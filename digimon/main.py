@@ -300,3 +300,40 @@ async def delete_item(wallet_id: int) -> dict:
 
     return dict(message="delete success")
 
+@app.post("/transactions")
+async def create_item(transaction: CreatedTransaction) -> Transaction:
+    print("created_merchant", transaction)
+    data = transaction.dict()
+    dbitem = DBTransaction(**data)
+    with Session(engine) as session:
+        session.add(dbitem)
+        session.commit()
+        session.refresh(dbitem)
+
+    # return Item.parse_obj(dbitem.dict())
+    return Transaction.from_orm(dbitem)
+
+@app.get("/transactions")
+async def read_items() -> Transaction_list:
+    with Session(engine) as session:
+        items = session.exec(select(DBTransaction)).all()
+        
+    return Transaction_list.from_orm(dict(transactions=items, page_size=0, page=0, size_per_page=0))
+
+@app.get("/transactions/{transaction_id}")
+async def read_item(transaction_id: int) -> Transaction:
+    with Session(engine) as session:
+        db_item = session.get(DBTransaction, transaction_id)
+        if db_item:
+            return Transaction.from_orm(db_item)
+    raise HTTPException(status_code=404, detail="Item not found")
+
+@app.delete("/transactions/{transaction_id}")
+async def delete_item(transaction_id: int) -> dict:
+    with Session(engine) as session:
+        db_item = session.get(DBTransaction, transaction_id)
+        session.delete(db_item)
+        session.commit()
+
+    return dict(message="delete success")
+
