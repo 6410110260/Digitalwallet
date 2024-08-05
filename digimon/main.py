@@ -6,6 +6,26 @@ from pydantic import BaseModel, ConfigDict
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 
 
+class BaseMerchant(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    name: str
+    description: str
+    merchant_type: str
+    location: str
+    tax_id: str | None = None
+
+class BaseWallet(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    owner: str
+    balance: float
+
+
+class BaseTransaction(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    sender: str
+    receiver: str
+    amount: float
+
 class BaseItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -13,6 +33,8 @@ class BaseItem(BaseModel):
     description: str | None = None
     price: float = 0.12
     tax: float | None = None
+    merchant_id: int | None
+
 
 
 class CreatedItem(BaseItem):

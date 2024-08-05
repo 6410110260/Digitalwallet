@@ -14,7 +14,7 @@ files = [
 [[package]]
 name = "anyio"
 version = "4.4.0"
-description = "High level compatibility layer for multiple asynchronous event loop implementations"
+description = "High level compatibility env\Scripts\activatelayer for multiple asynchronous event loop implementations"
 optional = false
 python-versions = ">=3.8"
 files = [
