@@ -44,9 +44,34 @@ class CreatedItem(BaseItem):
 class UpdatedItem(BaseItem):
     pass
 
+class CreatedMerchant(BaseMerchant):
+    pass
+
+class UpdateMerchant(BaseMerchant):
+    pass
+
+class CreatedTransaction(BaseTransaction):
+    pass
+
+class CreatedWallet(BaseWallet):
+    pass
+
+class UpdateWallet(BaseWallet):
+    pass
+
+class Merchant(BaseMerchant):
+    id: int
+
+class Wallet(BaseWallet):
+    id: int
+
+class Transaction(BaseTransaction):
+    id: int
 
 class Item(BaseItem):
     id: int
+    merchant_id: int
+
 
 
 class DBItem(Item, SQLModel, table=True):
