@@ -198,3 +198,53 @@ async def delete_item(item_id: int) -> dict:
         session.commit()
 
     return dict(message="delete success")
+
+
+@app.post("/merchants")
+async def create_item(merchant: CreatedMerchant) -> Merchant:
+    print("created_merchant", merchant)
+    data = merchant.dict()
+    dbitem = DBMerchant(**data)
+    with Session(engine) as session:
+        session.add(dbitem)
+        session.commit()
+        session.refresh(dbitem)
+
+    return Merchant.from_orm(dbitem)
+
+@app.get("/merchants")
+async def read_items() -> Merchant_list:
+    with Session(engine) as session:
+        items = session.exec(select(DBMerchant)).all()
+        
+    return Merchant_list.from_orm(dict(merchants=items, page_size=0, page=0, size_per_page=0))
+
+@app.get("/merchants/{merchant_id}")
+async def read_item(merchant_id: int) -> Merchant:
+    with Session(engine) as session:
+        db_item = session.get(DBMerchant, merchant_id)
+        if db_item:
+            return Merchant.from_orm(db_item)
+    raise HTTPException(status_code=404, detail="Item not found")
+
+@app.put("/merchants/{merchant_id}")
+async def update_item(merchant_id: int, item: UpdateMerchant) -> Merchant:
+    print("update_item", item)
+    data = item.dict()
+    with Session(engine) as session:
+        db_item = session.get(DBMerchant, merchant_id)
+        db_item.sqlmodel_update(data)
+        session.add(db_item)
+        session.commit()
+        session.refresh(db_item)
+
+    return Merchant.from_orm(db_item)
+
+@app.delete("/merchants/{merchant_id}")
+async def delete_item(merchant_id: int) -> dict:
+    with Session(engine) as session:
+        db_item = session.get(DBMerchant, merchant_id)
+        session.delete(db_item)
+        session.commit()
+
+    return dict(message="delete success")
