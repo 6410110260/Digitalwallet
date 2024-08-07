@@ -1,47 +1,72 @@
-from fastapi import APIRouter
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional , List, Annotated
+from sqlmodel import Field, SQLModel, create_engine, Session, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from models import engine
 from models.items import BaseItem
 from models.merchants import BaseMerchant, DBMerchant, Merchant, MerchantList, UpdatedMerchant
 from routers.items import create_item
+from .. import models
 
 router = APIRouter(prefix="/merchants")
-@router.post("/merchants")
-async def create_merchant(merchant: BaseMerchant):
-    with Session(engine) as session:
-        db_merchant = DBMerchant(**merchant.dict())
-        session.add(db_merchant)
-        session.commit()
-        session.refresh(db_merchant)
-    return db_merchant
-
-@router.get("/merchants")
-async def read_merchants() -> MerchantList:
-    with Session(engine) as session:
-        merchants = session.exec(select(DBMerchant)).all()
-        return MerchantList.from_orm(dict(merchants=merchants, page_size=0, page=0, size_per_page=0))
-
-@router.post("/merchants/{merchant_id}/items")
-async def create_merchant_item(merchant_id: int, item: BaseItem):
-    item.merchant_id = merchant_id
-    return await create_item(item)
-
-@router.put("/merchants/{merchant_id}")
-async def update_merchant(merchant_id: int, merchant: UpdatedMerchant) -> Merchant:
-    print("update_merchant", merchant)
+ 
+@router.post("")
+async def create_merchant(
+    merchant: models.CreatedMerchant,
+    session: Annotated[AsyncSession, Depends(models.get_session)],
+) -> models.Merchant:
+    print("create_merchant", merchant)
     data = merchant.dict()
-    with Session(engine) as session:
-        db_merchant = session.get(DBMerchant, merchant_id)
-        db_merchant.sqlmodel_update(data)
-        session.add(db_merchant)
-        session.commit()
-        session.refresh(db_merchant)
-    return Merchant.from_orm(db_merchant)
+    dbmerchant = models.DBMerchant(**data)
+    session.add(dbmerchant)
+    await session.commit()
+    await session.refresh(dbmerchant)
 
-@router.delete("/merchants/{merchant_id}")
-async def delete_merchant(merchant_id: int) -> dict:
-    with Session(engine) as session:
-        db_merchant = session.get(DBMerchant, merchant_id)
-        session.delete(db_merchant)
-        session.commit()
+    return models.Merchant.from_orm(dbmerchant)
+
+@router.get("")
+async def read_merchants(
+    session: Annotated[AsyncSession, Depends(models.get_session)]
+) -> models.MerchantList:
+    result = await session.exec(select(models.DBMerchant))
+    merchants = result.all()
+
+    return models.MerchantList.from_orm(
+        dict(merchants=merchants, page_size=0, page=0, size_per_page=0)
+    )
+
+@router.get("/{merchant_id}")
+async def read_merchant(
+    merchant_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]
+) -> models.Merchant:
+    db_merchant = await session.get(models.DBMerchant, merchant_id)
+    if db_merchant:
+        return models.Merchant.from_orm(db_merchant)
+    raise HTTPException(status_code=404, detail="Merchant not found")
+
+@router.put("/{merchant_id}")
+async def update_merchant(
+    merchant_id: int,
+    merchant: models.UpdatedMerchant,
+    session: Annotated[AsyncSession, Depends(models.get_session)],
+) -> models.Merchant:
+    data = merchant.dict()
+    db_merchant = await session.get(DBMerchant, merchant_id)
+    db_merchant.sqlmodel_update(data)
+    session.add(db_merchant)
+    await session.commit()
+    await session.refresh(db_merchant)
+
+    return models.Merchant.from_orm(db_merchant)
+
+
+@router.delete("/{merchant_id}")
+async def delete_merchant(
+    merchant_id: int, session: Annotated[AsyncSession, Depends(models.get_session)]
+) -> dict:
+    db_merchant = await session.get(DBMerchant, merchant_id)
+    await session.delete(db_merchant)
+    await session.commit()
+
     return dict(message="delete success")

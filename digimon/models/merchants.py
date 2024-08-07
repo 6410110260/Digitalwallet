@@ -4,8 +4,6 @@ from sqlmodel import Field, Relationship, SQLModel
 from . import items
 
 
-
-
 class BaseMerchant(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str
