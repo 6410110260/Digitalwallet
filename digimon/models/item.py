@@ -1,9 +1,7 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import Relationship, SQLModel, Field
-
 from . import merchants
-
 
 class BaseItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)

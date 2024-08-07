@@ -1,9 +1,6 @@
 from fastapi import APIRouter, HTTPException
-
 from typing import Optional
-
 from sqlmodel import Field, SQLModel, create_engine, Session, select
-
 from models.wallets import BaseWallet, DBWallet, UpdatedWallet, Wallet, WalletList
 from models import engine
 

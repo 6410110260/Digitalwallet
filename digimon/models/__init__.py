@@ -1,7 +1,4 @@
 from sqlmodel import SQLModel, Session , create_engine
-
-
-
 from .items import *
 from .merchants import *
 from .transactions import *

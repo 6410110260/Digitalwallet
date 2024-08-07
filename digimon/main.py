@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-
 from routers import init_router
 from models import init_db
 

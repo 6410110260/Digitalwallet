@@ -1,7 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import Field, Relationship, SQLModel
-
 from . import items
 
 
