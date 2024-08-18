@@ -1,4 +1,3 @@
-from venv import logger
 from fastapi import Depends, HTTPException, status, Path, Query
 from fastapi.security import OAuth2PasswordBearer
 

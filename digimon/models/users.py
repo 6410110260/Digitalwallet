@@ -1,13 +1,21 @@
 import datetime
+from typing import TYPE_CHECKING, List
 
 import pydantic
 from pydantic import BaseModel, EmailStr, ConfigDict
-from sqlmodel import SQLModel, Field
+from sqlmodel import Relationship, SQLModel, Field
 
 from passlib.context import CryptContext
+if TYPE_CHECKING:
+    from .wallets import DBWallet
 
+from enum import Enum
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+class UserRole(str, Enum):
+    merchant = "merchant"
+    customer = "customer"
 
 class BaseUser(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -19,12 +27,14 @@ class BaseUser(BaseModel):
 
 class User(BaseUser):
     id: int
+    role: UserRole
     last_login_date: datetime.datetime | None = pydantic.Field(
         example="2023-01-01T00:00:00.000000", default=None
     )
     register_date: datetime.datetime | None = pydantic.Field(
         example="2023-01-01T00:00:00.000000", default=None
     )
+    
 
 
 class ReferenceUser(BaseModel):
@@ -86,11 +96,14 @@ class DBUser(BaseUser, SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     password: str
+    role: UserRole = Field(default=None)
 
     register_date: datetime.datetime = Field(default_factory=datetime.datetime.now)
     updated_date: datetime.datetime = Field(default_factory=datetime.datetime.now)
     last_login_date: datetime.datetime | None = Field(default=None)
-
+    #wallets_id: int | None = Field(default=None, foreign_key="wallets.id")
+    wallets: List["DBWallet"] = Relationship(back_populates="user")
+    
     async def has_roles(self, roles):
         for role in roles:
             if role in self.roles:
