@@ -1,0 +1,1 @@
+poetry run locust -f tests/test_index.py
