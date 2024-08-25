@@ -1,45 +1,48 @@
-from typing import Optional
-
+from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-from sqlmodel import Field, SQLModel, create_engine, Session, select, Relationship
-
+from sqlmodel import Relationship, SQLModel, Field
 from . import merchants
-
+from .users import *
 
 class BaseItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     name: str
-    description: str | None = None
-    price: float = 0.12
-    tax: float | None = None
-    merchant_id: int | None
-
-
+    description: Optional[str] = None
+    price: float
+    tax: Optional[float] = None
+    
+    
 class CreatedItem(BaseItem):
     pass
-
 
 class UpdatedItem(BaseItem):
     pass
 
-
 class Item(BaseItem):
     id: int
-    merchant_id: int
-    # merchant: merchants.Merchant | None
+    
+    user_id: int
+    role: UserRole
 
-
-class DBItem(BaseItem, SQLModel, table=True):
-    __tablename__ = "items"
+class DBItem(SQLModel, Item, table=True):
+    __table_args__ = {'extend_existing': True}
+    # Correctly define the primary key with default=None
     id: int = Field(default=None, primary_key=True)
-    merchant_id: int = Field(default=None, foreign_key="merchants.id")
-    # merchant: merchants.DBMerchant | None = Relationship(back_populates="merchant")
+    # Properly set foreign key reference
+    merchant_id: int = Field(default=None, foreign_key="dbmerchant.id")
+    # Use proper type hints for relationship
+    merchant: merchants.DBMerchant | None = Relationship(back_populates="items")
 
-
+    user_id: int = Field( default=None, foreign_key="users.id")
+    user: DBUser | None = Relationship(back_populates="item")
+    role: UserRole = Field(default=None)
 class ItemList(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    items: list[Item]
+    items: List[Item]
     page: int
-    page_size: int
+    page_count: int
+    
     size_per_page: int
+    
+
+# Import the BaseMerchant module correctly

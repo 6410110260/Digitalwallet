@@ -1,13 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
-
 from typing import Annotated
-
 from .. import deps
 from .. import models
-
-
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -63,6 +59,8 @@ async def register_merchant(
 
     # create new merchant
     dbmerchant = models.DBMerchant(**merchant_info.dict())
+   
+    dbmerchant = models.DBMerchant.model_validate(merchant_info)
     dbmerchant.user = user
 
     session.add(dbmerchant)
@@ -71,15 +69,28 @@ async def register_merchant(
     await session.refresh(user)
     await session.refresh(dbmerchant)
 
-    return models.Merchant.from_orm(dbmerchant)
+    wallet = models.DBWallet(
+        balance=0.0,  # You can set the initial balance to 0 or any other value
+        user_id=user.id , role=models.UserRole.merchant
+    )
+    session.add(wallet)
+
+    # Final commit
+    await session.commit()
+    
+    # Refresh to get the latest data
+    await session.refresh(user)
+    await session.refresh(dbmerchant)
+    await session.refresh(wallet)
+
+    return models.Merchant.model_validate(dbmerchant)
 
 @router.post("/register_customer")
 async def register_customer(
     user_info: models.RegisteredUser,
     customer_info: models.CreatedCustomer,
     session: Annotated[AsyncSession, Depends(models.get_session)],
-) -> models.Merchant:
-
+) -> models.Customer:
     # check username
     user_result = await session.execute(
         select(models.DBUser).where(models.DBUser.username == user_info.username)
@@ -104,13 +115,34 @@ async def register_customer(
     dbcustomer = models.DBCustomer(**customer_info.dict())
     dbcustomer.user = user
 
+    # Add customer to the session first
     session.add(dbcustomer)
+
+    # Commit to generate IDs
+    await session.commit()
+
+    # Refresh the customer to get the ID
+    await session.refresh(dbcustomer)
+    
+    # Create new wallet for the customer with valid user_id and customer_id
+    wallet = models.DBWallet(
+        balance=0.0,  # You can set the initial balance to 0 or any other value
+        user_id=user.id,
+        role=models.UserRole.customer
+       
+    )
+    session.add(wallet)
+
+    # Final commit
     await session.commit()
     
+    # Refresh to get the latest data
     await session.refresh(user)
     await session.refresh(dbcustomer)
-
+    await session.refresh(wallet)
+    
     return models.Customer.from_orm(dbcustomer)
+
 
 
 
@@ -180,3 +212,18 @@ async def update(
     await session.refresh(user)
 
     return user
+
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: Annotated[models.User, Depends(deps.get_current_user)],
+    session: Annotated[AsyncSession, Depends(models.get_session)],
+) -> dict:
+    db_user = await session.get(models.DBUser, user_id)
+    if db_user:
+        await session.delete(db_user)
+        await session.commit()
+
+
+        return dict(message="delete success")
+    raise HTTPException(status_code=404, detail="user not found")
